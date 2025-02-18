@@ -1,0 +1,11 @@
+.venv
+.env
+__pycache__
+.pytest_cache
+
+dependency_links.txt
+PKG-INFO
+requires.txt
+SOURCES.txt
+top_level.txt
+
