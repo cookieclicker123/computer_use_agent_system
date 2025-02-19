@@ -59,6 +59,7 @@ python -m pytest tests
 # Run specific test files
 python -m pytest tests/test_mock_llm.py
 python -m pytest tests/test_task_planner.py
+python -m pytest tests/test_mock_screenshot_agent.py
 ```
 
 ## Project Structure
