@@ -4,10 +4,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from openai import OpenAI
 from src.data_model import (
-    TaskPlan, Task, TaskAction, UIElement,
-    MouseAction, KeyboardAction, SystemAction, 
-    UIElementType, ValidationStatus, ValidationResult,
-    taskPlannerFn
+    TaskPlan, MouseAction, KeyboardAction, 
+    SystemAction, UIElementType, ValidationStatus
 )
 from src.task_planner import create_task_planner
 
