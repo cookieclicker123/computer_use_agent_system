@@ -56,23 +56,55 @@ def create_task_planner(api_key: Optional[str] = None) -> taskPlannerFn:
             
         USER_QUERY = goal.strip()
         logger.info(f"Planning tasks for goal: {USER_QUERY}")
+        logger.info("About to log Mouse Actions")
+        
+        try:
+            # Debug the enum values first
+            logger.info(f"Raw MouseAction.LEFT_CLICK: {MouseAction.LEFT_CLICK}")
+            logger.info(f"MouseAction.LEFT_CLICK.name: {MouseAction.LEFT_CLICK.name}")
+            logger.info(f"MouseAction.LEFT_CLICK.value: {MouseAction.LEFT_CLICK.value}")
+            logger.info(f"Type of MouseAction.LEFT_CLICK: {type(MouseAction.LEFT_CLICK)}")
+            
+            # Debug the dict creation
+            logger.info(f"MOUSE_ACTIONS dict: {MOUSE_ACTIONS}")
+            logger.info(f"Type of MOUSE_ACTIONS: {type(MOUSE_ACTIONS)}")
+            
+            mouse_actions = [a.name for a in MouseAction]
+            logger.info("Mouse Actions logged")
+            
+            keyboard_actions = [a.name for a in KeyboardAction]
+            logger.info("Keyboard Actions logged")
+            
+            ui_types = [e.name for e in UIElementType]
+            logger.info("UI Types logged")
+            
+            # Log available actions and types
+            logger.info(f"Available Mouse Actions: {mouse_actions}")
+            logger.info(f"Available Keyboard Actions: {keyboard_actions}")
+            logger.info(f"Available UI Element Types: {ui_types}")
+            
+            logger.info("About to create SYSTEM_PROMPT")
+            
+            # Pre-compute the lists
+            mouse_action_values = [a.value for a in MouseAction]
+            keyboard_action_values = [a.value for a in KeyboardAction]
+            system_action_values = [a.value for a in SystemAction]
+            ui_type_values = [e.value for e in UIElementType]
+            validation_state_values = [s.value for s in ValidationStatus]
 
-        SYSTEM_PROMPT = f"""You are a computer automation task planner. Your role is to break down user goals into specific, actionable tasks.
+            SYSTEM_PROMPT = """You are a computer automation task planner. Your role is to break down user goals into specific, actionable tasks.
 
 User Query: '{USER_QUERY}'
 High Level Goal: Search Google for '{USER_QUERY}' starting from VSCode terminal
 
-IMPORTANT: Use these exact enum values:
-Mouse Actions: {MOUSE_ACTIONS}
-Keyboard Actions: {KEYBOARD_ACTIONS}
-System Actions: {SYSTEM_ACTIONS}
-UI Element Types: {UI_ELEMENT_TYPES}
-Validation States: {VALIDATION_STATES}
+IMPORTANT: Use these exact lowercase enum values:
+Mouse Actions: {MOUSE_VALUES}
+Keyboard Actions: {KEYBOARD_VALUES}
+System Actions: {SYSTEM_VALUES}
+UI Element Types: {UI_VALUES}
+Validation States: {VALIDATION_VALUES}
 
-Validation Schema: {VALIDATION_SCHEMA}
-Retry Schema: {RETRY_SCHEMA}
-
-Complete Example Task Plan:
+Return a JSON response matching this exact structure:
 {{
     "goal": "Search Google for 'neural networks' starting from VSCode terminal",
     "tasks": [
@@ -81,14 +113,14 @@ Complete Example Task Plan:
             "description": "Exit VSCode and return to desktop",
             "actions": [
                 {{
-                    "action_type": {KeyboardAction.CTRL_LEFT},
+                    "action_type": "ctrl_left",
                     "target_element": {{
-                        "element_type": {UIElementType.GENERIC},
+                        "element_type": "window",
                         "description": "VSCode window",
                         "confidence_required": 0.8
                     }},
                     "validation_result": {{
-                        "status": {ValidationStatus.PENDING},
+                        "status": "pending",
                         "retry_count": 0,
                         "max_retries": 3
                     }},
@@ -99,106 +131,53 @@ Complete Example Task Plan:
                 }}
             ],
             "dependencies": [],
-            "validation_status": {ValidationStatus.PENDING}
-        }},
-        {{
-            "task_id": "launch_chrome",
-            "description": "Open Google Chrome browser",
-            "actions": [
-                {{
-                    "action_type": {MouseAction.DOUBLE_CLICK},
-                    "target_element": {{
-                        "element_type": {UIElementType.ICON},
-                        "description": "Chrome browser icon",
-                        "confidence_required": 0.9
-                    }},
-                    "validation_result": {{
-                        "status": {ValidationStatus.PENDING},
-                        "retry_count": 0,
-                        "max_retries": 3
-                    }},
-                    "retry_strategy": {{
-                        "max_attempts": 3,
-                        "delay_between_attempts": 1.0
-                    }}
-                }}
-            ],
-            "dependencies": ["navigate_to_desktop"],
-            "validation_status": {ValidationStatus.PENDING}
-        }},
-        {{
-            "task_id": "perform_search",
-            "description": "Enter search query",
-            "actions": [
-                {{
-                    "action_type": {MouseAction.LEFT_CLICK},
-                    "target_element": {{
-                        "element_type": {UIElementType.SEARCH_BAR},
-                        "description": "Google search bar",
-                        "confidence_required": 0.8
-                    }},
-                    "validation_result": {{
-                        "status": {ValidationStatus.PENDING},
-                        "retry_count": 0,
-                        "max_retries": 3
-                    }},
-                    "retry_strategy": {{
-                        "max_attempts": 3,
-                        "delay_between_attempts": 1.0
-                    }}
-                }},
-                {{
-                    "action_type": {KeyboardAction.TYPE},
-                    "input_data": "{USER_QUERY}",
-                    "target_element": {{
-                        "element_type": {UIElementType.SEARCH_BAR},
-                        "description": "Google search bar",
-                        "confidence_required": 0.8
-                    }},
-                    "validation_result": {{
-                        "status": {ValidationStatus.PENDING},
-                        "retry_count": 0,
-                        "max_retries": 2
-                    }},
-                    "retry_strategy": {{
-                        "max_attempts": 2,
-                        "delay_between_attempts": 1.0
-                    }}
-                }}
-            ],
-            "dependencies": ["launch_chrome"],
-            "validation_status": {ValidationStatus.PENDING}
+            "validation_status": "pending"
         }}
     ],
     "current_task_index": 0,
-    "status": {ValidationStatus.PENDING}
-}}
-
-Always output valid JSON matching this exact structure and using the exact enum values shown above."""
-            
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": USER_QUERY}
-                ],
-                temperature=0.1,
-                max_tokens=8192,
-                response_format={ "type": "json_object" }
-            )
-            
-            task_plan_dict = response.choices[0].message.content
-            logger.debug(f"Raw GPT Response:\n{task_plan_dict}")
+    "status": "pending"
+}}"""
             
             try:
-                return TaskPlan.model_validate_json(task_plan_dict)
+                # Pass all pre-computed lists
+                formatted_prompt = SYSTEM_PROMPT.format(
+                    USER_QUERY=USER_QUERY,
+                    MOUSE_VALUES=mouse_action_values,
+                    KEYBOARD_VALUES=keyboard_action_values,
+                    SYSTEM_VALUES=system_action_values,
+                    UI_VALUES=ui_type_values,
+                    VALIDATION_VALUES=validation_state_values
+                )
+                
+                response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": formatted_prompt},
+                        {"role": "user", "content": USER_QUERY}
+                    ],
+                    temperature=0.1,
+                    max_tokens=8192,
+                    response_format={ "type": "json_object" }
+                )
+                
+                task_plan_dict = response.choices[0].message.content
+                logger.debug(f"Raw GPT Response:\n{task_plan_dict}")
+                
+                try:
+                    return TaskPlan.model_validate_json(task_plan_dict)
+                except Exception as e:
+                    logger.error(f"Validation Error Details:\n{str(e)}")
+                    raise ValueError(f"Failed to parse GPT response into TaskPlan: {e}")
+                
             except Exception as e:
-                logger.error(f"Validation Error Details:\n{str(e)}")
-                raise ValueError(f"Failed to parse GPT response into TaskPlan: {e}")
+                logger.error(f"API Error: {str(e)}")
+                raise RuntimeError(f"Failed to generate task plan: {e}")
                 
         except Exception as e:
-            logger.error(f"API Error: {str(e)}")
-            raise RuntimeError(f"Failed to generate task plan: {e}")
-    
+            logger.error(f"Error in enum processing: {str(e)}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise
+
     return planner 

@@ -36,22 +36,16 @@ class ValidationStatus(Enum):
 
 ActionType = Union[MouseAction, KeyboardAction, SystemAction]
 
-class UIElementType(Enum):
-    BUTTON = "button"
-    TEXT_INPUT = "text_input"
-    LINK = "link"
-    DROPDOWN = "dropdown"
-    CHECKBOX = "checkbox"
-    ICON = "icon"
-    MENU_ITEM = "menu_item"
-    TAB = "tab"
-    SLIDER = "slider"
-    SCROLLBAR = "scrollbar"
-    GENERIC = "generic"
-    SEARCH_BAR = "search_bar"
+class UIElementType(str, Enum):
     WINDOW = "window"
     TERMINAL = "terminal"
+    ICON = "icon"
     TASKBAR = "taskbar"
+    SEARCH_BAR = "search_bar"
+    TEXT_INPUT = "text_input"     # Functionally same as SEARCH_BAR
+    BUTTON = "button"
+    MENU_ITEM = "menu_item"       # Functionally similar to ICON/TASKBAR items
+    MENU_BAR = "menu_bar"         # Functionally similar to TASKBAR
 
 class UIElement(BaseModel):
     element_type: UIElementType
@@ -82,10 +76,11 @@ class DetectedElement(BaseModel):
     bounding_box: Optional[tuple[int, int, int, int]] = None
 
 class DetectedElements(BaseModel):
-    """Container for detected elements in a screenshot"""
-    elements: list[DetectedElement] = []
+    """Container for detected UI elements from a screenshot"""
+    elements: List[DetectedElement] = []
     total_count: int = 0
     highest_confidence: float = 0.0
+    raw_output: Optional[str] = None
 
 class ScreenshotResult(BaseModel):
     """Result of screenshot analysis with detected elements and possible actions"""
