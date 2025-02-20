@@ -60,6 +60,8 @@ python -m pytest tests
 python -m pytest tests/test_mock_llm.py
 python -m pytest tests/test_task_planner.py
 python -m pytest tests/test_mock_screenshot_agent.py
+python -m pytest tests/test_screenshot_vision_agent.py -v
+python -m pytest tests/test_vision_grouping.py -v
 ```
 
 ## Project Structure
