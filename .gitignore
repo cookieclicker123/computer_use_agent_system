@@ -9,3 +9,6 @@ requires.txt
 SOURCES.txt
 top_level.txt
 
+.DS_Store
+
+
