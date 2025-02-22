@@ -36,35 +36,54 @@ def display_task_plan(plan: TaskPlan):
     console.print(tree)
 
 def display_detected_elements(screenshot_results):
-    """Display the detected UI elements from screenshots"""
+    """Display the detected UI elements and their possible actions from screenshots"""
     console.print("\n[bold blue]Detected UI Elements:[/]")
     
     if not screenshot_results:
         console.print("[yellow]No elements detected[/]")
         return
         
-    # Create a table for the results
-    table = Table(show_header=True, header_style="bold magenta")
-    table.add_column("Screenshot")
-    table.add_column("Elements")
+    # Create a table for the elements
+    elements_table = Table(show_header=True, header_style="bold magenta")
+    elements_table.add_column("Screenshot")
+    elements_table.add_column("Elements")
+    
+    # Create a table for the actions
+    actions_table = Table(show_header=True, header_style="bold cyan")
+    actions_table.add_column("Screenshot")
+    actions_table.add_column("Element")
+    actions_table.add_column("Possible Actions")
     
     # Handle each screenshot result
     for result in screenshot_results:
         filename = Path(result.metadata.path).name if result.metadata else "Unknown"
         
-        # Extract element types from detected elements
+        # Extract element types for the elements table
         element_types = [
             e.element.element_type 
             for e in result.detected.elements
         ]
         elements_info = ", ".join(element_types) if element_types else "No elements"
         
-        table.add_row(
+        elements_table.add_row(
             filename,
             elements_info
         )
+        
+        # Add detailed actions for each element
+        for element in result.detected.elements:
+            actions = [str(action) for action in element.possible_actions]
+            actions_info = ", ".join(actions) if actions else "No actions"
+            
+            actions_table.add_row(
+                filename,
+                f"{element.element.element_type} ({element.element.description})",
+                actions_info
+            )
     
-    console.print(table)
+    console.print(elements_table)
+    console.print("\n[bold blue]Available Actions:[/]")
+    console.print(actions_table)
     console.print()
 
 def main():
