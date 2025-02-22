@@ -2,6 +2,13 @@
 
 ![Application Screenshot](img/app.png)
 
+[![Pydantic](https://img.shields.io/badge/pydantic-2.5-red.svg?logo=pydantic)](https://docs.pydantic.dev/latest/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python)](https://www.python.org/)
+[![OpenAI](https://img.shields.io/badge/GPT--4-Vision-green.svg?logo=openai)](https://openai.com/)
+[![Groq](https://img.shields.io/badge/Groq-Llama--3.2--90b-purple.svg)](https://groq.com/)
+[![Rich](https://img.shields.io/badge/Rich-13.7-yellow.svg)](https://rich.readthedocs.io/)
+[![Type Hints](https://img.shields.io/badge/Type%20Hints-Typed-blue.svg)](https://docs.python.org/3/library/typing.html)
+
 A robust, production-ready framework for building computer automation agents, powered by vision-language models and designed for extensibility.
 
 ## Table of Contents
