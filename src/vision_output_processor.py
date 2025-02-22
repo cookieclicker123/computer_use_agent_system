@@ -1,13 +1,10 @@
-from typing import List, Dict
+import json
+from typing import List
 from src.data_model import (
     DetectedElements, DetectedElement, UIElement, 
     UIElementType, MouseAction, KeyboardAction,
     TaskPlan, ScreenshotResult
 )
-import json
-import logging
-
-logger = logging.getLogger(__name__)
 
 def create_vision_processor(api_key: str = None):
     """Creates a vision output processor using GPT-4"""
@@ -54,18 +51,7 @@ Return valid JSON matching this EXACT structure:
     ) -> List[ScreenshotResult]:
         """Process vision outputs into grounded UI elements"""
         
-        # Setup file logging
-        file_handler = logging.FileHandler('debug_vision_processor.log', mode='w')
-        file_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-        
-        try:
-            # Debug what we're starting with
-            logger.debug("=== Starting Vision Processing ===")
-            logger.debug(f"Number of vision outputs: {len(vision_outputs)}")
-            
+        try:       
             # First, condense each markdown description
             CONDENSE_PROMPT = """Extract and list the key UI elements from this description. For each element include:
 1. What type of element it is
@@ -76,11 +62,7 @@ Format as a simple list:
 - Element: [type] - [description] - Actions: [possible actions]"""
 
             condensed_elements = []
-            for idx, result in enumerate(vision_outputs):
-                logger.debug(f"\n=== Processing Screenshot {idx + 1}: {result.metadata.path} ===")
-                logger.debug(f"Raw output length: {len(result.detected.raw_output) if result.detected.raw_output else 0}")
-                logger.debug(f"Raw output preview: {result.detected.raw_output[:200]}..." if result.detected.raw_output else "No raw output")
-                
+            for idx, result in enumerate(vision_outputs):                
                 if result.detected.raw_output:
                     response = client.chat.completions.create(
                         model="gpt-4o",
@@ -91,16 +73,7 @@ Format as a simple list:
                         temperature=0.1
                     )
                     condensed = response.choices[0].message.content
-                    logger.debug(f"\nCondensed elements for screenshot {idx + 1}:")
-                    logger.debug(condensed)
                     condensed_elements.append(condensed)
-
-            # Debug what we're sending to conversion
-            logger.debug("\n=== Preparing Conversion ===")
-            logger.debug("Combined condensed elements:")
-            for idx, elements in enumerate(condensed_elements):
-                logger.debug(f"\nScreenshot {idx + 1} elements:")
-                logger.debug(elements)
             
             # Get the complete schema
             detected_elements_schema = DetectedElements.model_json_schema()
@@ -161,16 +134,11 @@ Return JSON matching this EXACT DetectedElements example:
                 ).model_dump_json(indent=2),
                 MOUSE_ACTIONS=[a.value for a in MouseAction],
                 KEYBOARD_ACTIONS=[a.value for a in KeyboardAction]
-            )
-            
-            logger.debug("\nFinal Conversion Prompt:")
-            logger.debug(formatted_prompt)
+            )        
             
             # Process each screenshot
             for idx, result in enumerate(vision_outputs):
-                if result.detected.raw_output:
-                    logger.debug(f"\n=== Converting Screenshot {idx + 1}: {result.metadata.path} ===")
-                    
+                if result.detected.raw_output:                    
                     response = client.chat.completions.create(
                         model="gpt-4o",
                         messages=[
@@ -179,9 +147,6 @@ Return JSON matching this EXACT DetectedElements example:
                         ],
                         temperature=0.1
                     )
-                    
-                    logger.debug(f"\nGPT Response for Screenshot {idx + 1}:")
-                    logger.debug(response.choices[0].message.content)
                     
                     try:
                         # Strip markdown code block markers if present
@@ -193,9 +158,7 @@ Return JSON matching this EXACT DetectedElements example:
                             json_content = json_content[start:end].strip()
                         
                         elements_dict = json.loads(json_content)
-                        logger.debug(f"\nParsed elements dict for Screenshot {idx + 1}:")
-                        logger.debug(json.dumps(elements_dict, indent=2))
-                        
+
                         if isinstance(elements_dict, dict) and "elements" in elements_dict:
                             detected_elements = [
                                 DetectedElement(
@@ -205,59 +168,26 @@ Return JSON matching this EXACT DetectedElements example:
                                     bounding_box=e["bounding_box"]
                                 )
                                 for e in elements_dict["elements"]
-                            ]
-                            
-                            # Debug the assignment
-                            logger.debug(f"\n=== Element Assignment for {result.metadata.path} ===")
-                            logger.debug(f"Number of elements to assign: {len(detected_elements)}")
-                            logger.debug("Elements being assigned:")
-                            for elem in detected_elements:
-                                logger.debug(f"  - Type: {elem.element.element_type}")
-                                logger.debug(f"    Description: {elem.element.description}")
+                            ]                           
                             
                             # Assign elements
                             result.detected.elements = detected_elements
                             
-                            # Verify assignment
-                            logger.debug("\nVerifying assignment:")
-                            logger.debug(f"Elements in result: {len(result.detected.elements)}")
-                            logger.debug(f"Total count set to: {result.detected.total_count}")
-                            
                             result.detected.total_count = len(detected_elements)
                             result.detected.highest_confidence = max(e.confidence for e in detected_elements)
-                            
-                            logger.debug(f"\nUpdated Screenshot {idx + 1} with:")
-                            logger.debug(f"- Total elements: {result.detected.total_count}")
-                            logger.debug("- Elements:")
-                            for elem in detected_elements:
-                                logger.debug(f"  * Type: {elem.element.element_type}")
-                                logger.debug(f"    Description: {elem.element.description[:50]}...")
-                                logger.debug(f"    Confidence: {elem.confidence}")
-                                logger.debug(f"    Actions: {elem.possible_actions}")
                         
                     except Exception as e:
-                        logger.error(f"Failed to parse response for Screenshot {idx + 1}: {str(e)}")
-                        logger.error(f"Response was: {response.choices[0].message.content}")
+                        print(f"Failed to parse response for Screenshot {idx + 1}: {str(e)}")
+                        print(f"Response was: {response.choices[0].message.content}")
 
-            # Final validation of results
-            logger.debug("\n=== Final Results Summary ===")
-            for idx, result in enumerate(vision_outputs):
-                logger.debug(f"\nScreenshot {idx + 1}: {result.metadata.path}")
-                logger.debug(f"Total elements: {result.detected.total_count}")
-                logger.debug(f"Has elements attribute: {hasattr(result.detected, 'elements')}")
-                if hasattr(result.detected, 'elements'):
-                    logger.debug(f"Elements list length: {len(result.detected.elements)}")
-                    logger.debug("Element types:")
-                    for elem in result.detected.elements:
-                        logger.debug(f"- {elem.element.element_type}")
             
             return vision_outputs
             
         except Exception as e:
-            logger.error(f"Error in process_outputs: {str(e)}")
+            print(f"Error in process_outputs: {str(e)}")
             return vision_outputs
         
         finally:
-            logger.removeHandler(file_handler)
+            print("Error in process_outputs: {str(e)}")
     
     return process_outputs 

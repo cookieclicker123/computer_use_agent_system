@@ -4,20 +4,16 @@ from dotenv import load_dotenv
 from src.task_planner import create_task_planner
 from src.screenshot_vision_agent import create_screenshot_agent
 from src.vision_output_processor import create_vision_processor
-from src.data_model import TaskPlan, ValidationStatus
+from src.data_model import TaskPlan
 from rich.console import Console
-from rich.logging import RichHandler
 from rich.panel import Panel
 from rich.tree import Tree
 from rich.table import Table
-import groq
 import openai
 import os
 
 # Configure rich console and logging
 console = Console()
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 # Load environment variables and set up paths
 ROOT_DIR = Path(__file__).parent
@@ -46,12 +42,15 @@ def display_detected_elements(screenshot_results):
     # Create a table for the elements
     elements_table = Table(show_header=True, header_style="bold magenta")
     elements_table.add_column("Screenshot")
+    elements_table.add_column("Element Count", justify="center")
+    elements_table.add_column("Highest Confidence", justify="center")
     elements_table.add_column("Elements")
     
     # Create a table for the actions
     actions_table = Table(show_header=True, header_style="bold cyan")
     actions_table.add_column("Screenshot")
     actions_table.add_column("Element")
+    actions_table.add_column("Confidence", justify="center")
     actions_table.add_column("Possible Actions")
     
     # Handle each screenshot result
@@ -67,6 +66,8 @@ def display_detected_elements(screenshot_results):
         
         elements_table.add_row(
             filename,
+            str(len(result.detected.elements)),
+            f"{result.detected.highest_confidence:.2f}",
             elements_info
         )
         
@@ -78,6 +79,7 @@ def display_detected_elements(screenshot_results):
             actions_table.add_row(
                 filename,
                 f"{element.element.element_type} ({element.element.description})",
+                f"{element.confidence:.2f}",
                 actions_info
             )
     
@@ -93,21 +95,21 @@ def main():
     openai_api_key = os.getenv("OPENAI_API_KEY")
     groq_api_key = os.getenv("GROQ_API_KEY")
     
-    logger.info("API Key Status:")
-    logger.info(f"OpenAI API Key present: {bool(openai_api_key)}")
-    logger.info(f"OpenAI API Key length: {len(openai_api_key) if openai_api_key else 0}")
-    logger.info(f"Groq API Key present: {bool(groq_api_key)}")
+    print("API Key Status:")
+    print(f"OpenAI API Key present: {bool(openai_api_key)}")
+    print(f"OpenAI API Key length: {len(openai_api_key) if openai_api_key else 0}")
+    print(f"Groq API Key present: {bool(groq_api_key)}")
     
     try:
         # Test OpenAI client creation
-        logger.info("Testing OpenAI client creation...")
+        print("Testing OpenAI client creation...")
         test_client = openai.OpenAI(api_key=openai_api_key)
-        logger.info("OpenAI client created successfully")
+        print("OpenAI client created successfully")
         
         # Create components
-        logger.info("Creating task planner...")
+        print("Creating task planner...")
         task_planner = create_task_planner(api_key=openai_api_key)
-        logger.info("Task planner created")
+        print("Task planner created")
         
         screenshot_fn = create_screenshot_agent(use_vision=True, api_key=groq_api_key)
         vision_processor = create_vision_processor()
@@ -116,10 +118,10 @@ def main():
         openai_client = openai.OpenAI(api_key=openai_api_key)
         
     except Exception as e:
-        logger.error(f"Setup error: {str(e)}")
-        logger.error(f"Error type: {type(e)}")
+        print(f"Setup error: {str(e)}")
+        print(f"Error type: {type(e)}")
         import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        print(f"Traceback: {traceback.format_exc()}")
         return
 
     screenshots = ["vscode.png", "desktop.png", "google_chrome.png"]
@@ -137,7 +139,7 @@ def main():
                 console.print("\n[bold green]✓ Task plan created[/]")
                 display_task_plan(task_plan)
             except Exception as e:
-                logger.error(f"Task planning failed: {str(e)}")
+                print(f"Task planning failed: {str(e)}")
                 continue
             
             # 2. Analyze screenshots
@@ -161,11 +163,11 @@ def main():
                         console.print(f"[red]No raw output for {screenshot}[/]")
                         
                 except Exception as e:
-                    logger.error(f"Vision analysis failed for {screenshot}: {str(e)}")
+                    print(f"Vision analysis failed for {screenshot}: {str(e)}")
                     continue
             
             if not vision_outputs:
-                logger.error("No vision outputs to process")
+                print("No vision outputs to process")
                 continue
                 
             # 3. Process vision outputs
@@ -181,15 +183,15 @@ def main():
                 display_detected_elements(vision_outputs)
                 
             except Exception as e:
-                logger.error(f"Vision processing failed: {str(e)}")
-                logger.error(f"Error type: {type(e)}")
+                print(f"Vision processing failed: {str(e)}")
+                print(f"Error type: {type(e)}")
                 import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
+                print(f"Traceback: {traceback.format_exc()}")
                 continue
 
         except Exception as e:
-            logger.error(f"Main loop error: {str(e)}")
-            logger.error(f"Error type: {type(e)}")
+            print(f"Main loop error: {str(e)}")
+            print(f"Error type: {type(e)}")
             continue
 
 if __name__ == "__main__":
@@ -198,4 +200,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         console.print("\n[bold red]Exiting...[/]")
     except Exception as e:
-        logger.error(f"Application error: {e}") 
+        print(f"Application error: {e}") 

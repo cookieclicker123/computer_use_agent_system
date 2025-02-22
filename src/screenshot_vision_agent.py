@@ -1,29 +1,21 @@
 import os
-from pathlib import Path
 from datetime import datetime
 from typing import Optional
 import groq
 from PIL import Image
 import base64
-import json
-import logging
 from .data_model import (
-    ScreenshotMetadata, ScreenshotResult, DetectedElement, DetectedElements,
-    UIElement, UIElementType, ActionType, ValidationStatus,
-    MouseAction, KeyboardAction, ScreenshotFn
+    ScreenshotMetadata, ScreenshotResult, DetectedElements,
+    UIElementType, MouseAction, KeyboardAction, ScreenshotFn
 )
-
-logger = logging.getLogger(__name__)
 
 def create_screenshot_agent(use_vision: bool = True, api_key: Optional[str] = None) -> ScreenshotFn:
     """Factory function that creates and returns a screenshot function"""
     
-    logger.info("Creating screenshot agent with vision=%s", use_vision)
     
     # Initialize vision model client
     if use_vision:
         client = groq.Groq(api_key=api_key or os.getenv("GROQ_API_KEY"))
-        logger.info("Initialized Groq client")
     
     def get_system_prompt() -> str:
         """Create system prompt with data model context"""
@@ -64,13 +56,10 @@ def create_screenshot_agent(use_vision: bool = True, api_key: Optional[str] = No
         raise ValueError("Incomplete JSON object")
 
     def get_detected_elements(image_path: str, client) -> DetectedElements:
-        """Get detected elements from vision model analysis"""
-        logger.info(f"Analyzing image: {image_path}")
-        
+        """Get detected elements from vision model analysis"""        
         try:
             with open(image_path, "rb") as image_file:
                 image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-                logger.debug("Successfully encoded image to base64")
             
             user_prompt = """Analyze this screenshot and describe the UI elements you see.
 For each element, describe:
@@ -80,9 +69,6 @@ For each element, describe:
 4. Any text or labels visible
 
 Be specific and detailed but use natural language."""
-
-            logger.info("Sending request to vision model")
-            logger.debug(f"Using prompt: {user_prompt}")
             
             try:
                 response = client.chat.completions.create(
@@ -102,20 +88,15 @@ Be specific and detailed but use natural language."""
                         }
                     ]
                 )
-                logger.info("Received response from vision model")
-                logger.debug(f"Raw response: {response}")
-                
+
             except Exception as api_error:
-                logger.error(f"API call failed: {str(api_error)}")
-                logger.error(f"Error type: {type(api_error)}")
+                print(f"API call failed: {str(api_error)}")
+                print(f"Error type: {type(api_error)}")
                 raise
 
             try:
                 # Store raw output for later processing
                 raw_output = response.choices[0].message.content
-                logger.info("Successfully extracted raw output")
-                logger.debug(f"Raw output content: {raw_output}")
-                
                 # Return minimal DetectedElements to satisfy interface
                 # Real processing happens in vision_output_processor
                 result = DetectedElements(
@@ -124,27 +105,24 @@ Be specific and detailed but use natural language."""
                     highest_confidence=0.0,
                     raw_output=raw_output
                 )
-                logger.info("Created DetectedElements object")
                 return result
                 
             except Exception as parse_error:
-                logger.error(f"Failed to process vision model response: {str(parse_error)}")
-                logger.error(f"Error type: {type(parse_error)}")
+                print(f"Failed to process vision model response: {str(parse_error)}")
+                print(f"Error type: {type(parse_error)}")
                 import traceback
-                logger.error(f"Full traceback: {traceback.format_exc()}")
+                print(f"Full traceback: {traceback.format_exc()}")
                 raise
                 
         except Exception as e:
-            logger.error(f"Error in get_detected_elements: {str(e)}")
-            logger.error(f"Error type: {type(e)}")
+            print(f"Error in get_detected_elements: {str(e)}")
+            print(f"Error type: {type(e)}")
             import traceback
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            print(f"Full traceback: {traceback.format_exc()}")
             return DetectedElements()
     
     def screenshot_fn(image_path: str) -> ScreenshotResult:
-        """Process a screenshot and return results"""
-        logger.info(f"Processing screenshot: {image_path}")
-        
+        """Process a screenshot and return results"""        
         try:
             # Get image metadata
             image = Image.open(image_path)
@@ -156,32 +134,24 @@ Be specific and detailed but use natural language."""
                 path=str(image_path),
                 resolution=(width, height)
             )
-            logger.info(f"Got image metadata: {metadata}")
             
             # Get detected elements
             if use_vision:
-                logger.info("Using vision model for element detection")
                 detected = get_detected_elements(image_path, client)
             else:
-                logger.info("Vision disabled, returning empty elements")
                 detected = DetectedElements()
             
             result = ScreenshotResult(
                 metadata=metadata,
                 detected=detected
             )
-            logger.info("Successfully created ScreenshotResult")
             return result
             
         except Exception as e:
-            logger.error(f"Error in screenshot_fn: {str(e)}")
-            logger.error(f"Error type: {type(e)}")
+            print(f"Error in screenshot_fn: {str(e)}")
+            print(f"Error type: {type(e)}")
             import traceback
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            print(f"Full traceback: {traceback.format_exc()}")
             raise
     
     return screenshot_fn
-
-# Example usage:
-# screenshot_fn = create_screenshot_agent(use_vision=True, api_key="your-api-key")
-# result = screenshot_fn("path/to/screenshot.png") 

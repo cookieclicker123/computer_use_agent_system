@@ -1,4 +1,3 @@
-import logging
 from typing import Dict, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -11,9 +10,7 @@ from src.data_model import (
 
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+
 
 # Define enum mappings for system prompt
 MOUSE_ACTIONS = {action: action.value for action in MouseAction}
@@ -55,36 +52,8 @@ def create_task_planner(api_key: Optional[str] = None) -> taskPlannerFn:
             raise ValueError("Goal cannot be empty")
             
         USER_QUERY = goal.strip()
-        logger.info(f"Planning tasks for goal: {USER_QUERY}")
-        logger.info("About to log Mouse Actions")
         
-        try:
-            # Debug the enum values first
-            logger.info(f"Raw MouseAction.LEFT_CLICK: {MouseAction.LEFT_CLICK}")
-            logger.info(f"MouseAction.LEFT_CLICK.name: {MouseAction.LEFT_CLICK.name}")
-            logger.info(f"MouseAction.LEFT_CLICK.value: {MouseAction.LEFT_CLICK.value}")
-            logger.info(f"Type of MouseAction.LEFT_CLICK: {type(MouseAction.LEFT_CLICK)}")
-            
-            # Debug the dict creation
-            logger.info(f"MOUSE_ACTIONS dict: {MOUSE_ACTIONS}")
-            logger.info(f"Type of MOUSE_ACTIONS: {type(MOUSE_ACTIONS)}")
-            
-            mouse_actions = [a.name for a in MouseAction]
-            logger.info("Mouse Actions logged")
-            
-            keyboard_actions = [a.name for a in KeyboardAction]
-            logger.info("Keyboard Actions logged")
-            
-            ui_types = [e.name for e in UIElementType]
-            logger.info("UI Types logged")
-            
-            # Log available actions and types
-            logger.info(f"Available Mouse Actions: {mouse_actions}")
-            logger.info(f"Available Keyboard Actions: {keyboard_actions}")
-            logger.info(f"Available UI Element Types: {ui_types}")
-            
-            logger.info("About to create SYSTEM_PROMPT")
-            
+        try:    
             # Pre-compute the lists
             mouse_action_values = [a.value for a in MouseAction]
             keyboard_action_values = [a.value for a in KeyboardAction]
@@ -160,24 +129,22 @@ Return a JSON response matching this exact structure:
                     response_format={ "type": "json_object" }
                 )
                 
-                task_plan_dict = response.choices[0].message.content
-                logger.debug(f"Raw GPT Response:\n{task_plan_dict}")
-                
+                task_plan_dict = response.choices[0].message.content                
                 try:
                     return TaskPlan.model_validate_json(task_plan_dict)
                 except Exception as e:
-                    logger.error(f"Validation Error Details:\n{str(e)}")
+                    print(f"Validation Error Details:\n{str(e)}")
                     raise ValueError(f"Failed to parse GPT response into TaskPlan: {e}")
                 
             except Exception as e:
-                logger.error(f"API Error: {str(e)}")
+                print(f"API Error: {str(e)}")
                 raise RuntimeError(f"Failed to generate task plan: {e}")
                 
         except Exception as e:
-            logger.error(f"Error in enum processing: {str(e)}")
-            logger.error(f"Error type: {type(e)}")
+            print(f"Error in enum processing: {str(e)}")
+            print(f"Error type: {type(e)}")
             import traceback
-            logger.error(f"Full traceback: {traceback.format_exc()}")
+            print(f"Full traceback: {traceback.format_exc()}")
             raise
 
     return planner 
