@@ -1,6 +1,24 @@
 # Computer Use Task List Agent Framework
 
+![Application Screenshot](img/app.png)
+
 A robust, production-ready framework for building computer automation agents, powered by vision-language models and designed for extensibility.
+
+## Table of Contents
+- [Overview](#overview)
+  - [Key Features](#key-features)
+  - [Why This Framework?](#why-this-framework)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Running the tests](#running-the-tests)
+  - [Running the application](#running-the-application)
+- [Extending the Framework](#extending-the-framework)
+  - [Adding Tools](#adding-tools)
+  - [Customizing Prompts](#customizing-prompts)
+  - [Extending Data Models](#extending-data-models)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Overview
 
