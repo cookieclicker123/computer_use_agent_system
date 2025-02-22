@@ -8,6 +8,7 @@ from .data_model import (
     ScreenshotMetadata, ScreenshotResult, DetectedElements,
     UIElementType, MouseAction, KeyboardAction, ScreenshotFn
 )
+from .prompts.screenshot_agent_prompts import SCREENSHOT_VISION_PROMPT
 
 def create_screenshot_agent(use_vision: bool = True, api_key: Optional[str] = None) -> ScreenshotFn:
     """Factory function that creates and returns a screenshot function"""
@@ -61,15 +62,6 @@ def create_screenshot_agent(use_vision: bool = True, api_key: Optional[str] = No
             with open(image_path, "rb") as image_file:
                 image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
             
-            user_prompt = """Analyze this screenshot and describe the UI elements you see.
-For each element, describe:
-1. What type of UI element it is
-2. Its location and appearance
-3. What actions a user could take with it
-4. Any text or labels visible
-
-Be specific and detailed but use natural language."""
-            
             try:
                 response = client.chat.completions.create(
                     model="llama-3.2-90b-vision-preview",
@@ -77,7 +69,7 @@ Be specific and detailed but use natural language."""
                         {
                             "role": "user",
                             "content": [
-                                {"type": "text", "text": user_prompt},
+                                {"type": "text", "text": SCREENSHOT_VISION_PROMPT},
                                 {
                                     "type": "image_url",
                                     "image_url": {
