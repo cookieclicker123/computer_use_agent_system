@@ -1,94 +1,193 @@
-# Computer Use Task List Agent
+# Computer Use Task List Agent Framework
 
-A modular computer automation agent powered by GPT-4 Vision and Grounding DINO.
+A robust, production-ready framework for building computer automation agents, powered by vision-language models and designed for extensibility.
 
 ## Overview
 
-This project demonstrates a robust approach to building an AI-powered computer automation agent, focusing first on the critical task planning component. The system uses a large vision-language model (GPT-4) to interpret user intentions and generate structured task plans.
+This project provides a solid foundation for building AI-powered computer automation agents. Rather than a complete solution, it's a carefully architected framework that handles the complex tasks of:
+- Task planning and decomposition (gpt4o)
+- UI element detection and classification (groq (llama-3.2-90b-vision-preview))
+- Action recommendation and validation (gpt4o)
+
+The system is deliberately tool-agnostic, allowing developers to integrate their preferred:
+- Computer control tools (e.g., PyAutoGUI)
+- Object detection models (e.g., Grounding DINO)
+- Vision-language models (currently supports GPT-4o and Groq (llama-3.2-90b-vision-preview))
 
 ### Key Features
 
-- **Modular Architecture**: Each component (task planner, vision system, automation tools) is developed and tested independently
-- **Strong Data Model**: Ensures type safety and validation across all system components
-- **Test-Driven Development**: Comprehensive testing with mocks validates core functionality
-- **Extensible Design**: Ready for integration with Grounding DINO for vision and PyAutoGUI for automation
+- **Production-Ready Architecture**:
+  - Modular design with clear separation of concerns
+  - Comprehensive type system using Pydantic
+  - Extensive error handling and validation
+  - Clean logging and debugging infrastructure
 
-### Why GPT-4?
+- **Extensible Design**:
+  - Pluggable vision model support
+  - Customizable system prompts in dedicated prompts/ directory
+  - Expandable data models for new UI elements and actions
+  - Ready for tool integration (PyAutoGUI, Grounding DINO, etc.)
 
-While smaller LLMs are often sufficient for many tasks, complex computer automation requires:
-- Understanding nuanced user intentions
-- Breaking down tasks into logical sequences
-- Handling dynamic feedback and error states
-- Managing complex context across multiple steps
+- **Developer-Friendly**:
+  - Clear documentation and examples
+  - Test-driven development approach
+  - Easy prompt customization
+  - Minimal dependencies
 
-This complexity necessitates a more capable model like GPT-4, especially when combined with vision capabilities for UI interaction.
+### Why This Framework?
+
+Building computer automation agents requires solving several complex problems:
+1. Understanding user intentions
+2. Breaking down tasks into steps
+3. Identifying UI elements
+4. Planning appropriate actions
+5. Handling errors and validation
+
+This framework handles #1-4 robustly, leaving you to focus on:
+- Integrating your preferred tools
+- Customizing the behavior for your use case
+- Extending the capabilities
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
-- OpenAI API key (for GPT-4)
+- Python 3.11+
+- OpenAI API key (for GPT-4o) and Groq API key (for groq (llama-3.2-90b-vision-preview))
+- Virtual environment recommended
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone <repository-url>
-cd computer_use_agent
+git clone git@github.com:cookieclicker123/computer_use_agent_system.git
+cd computer_use_agent_system
 
 # Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install dependencies as editable package
-pip install --upgrade pip
-pip install -e .
+# Install dependencies
+pip install -r requirements.txt
 
 # Set up environment variables
-touch .env
-# Add your OpenAI API key to .env: 'OPENAI_API_KEY=...'
+cp .env.example .env
+# Add your API keys to .env
 ```
 
-### Running Tests
+### Running the tests
 
 ```bash
-# Run all tests
 python -m pytest tests
-
-# Run specific test files
-python -m pytest tests/test_mock_llm.py
-python -m pytest tests/test_task_planner.py
-python -m pytest tests/test_mock_screenshot_agent.py
-python -m pytest tests/test_screenshot_vision_agent.py -v
-python -m pytest tests/test_vision_grouping.py -v
 ```
 
-## Project Structure
-
-```
-computer_use_agent/
-├── src/
-│   ├── data_model.py      # Core data structures
-│   └── task_planner.py    # Task planning logic
-├── tests/
-│   ├── mocks/             # Mock implementations
-│   └── test_mock_llm.py   # Test cases
-└── README.md
+Individual test files:
+```bash
+pytest tests/test_task_planner.py
+pytest tests/test_screenshot_agent.py
+pytest tests/test_vision_output_processor.py
+pytest tests/test_vision_grouping.py
+pytest tests/test_mock_screenshot_agent.py
 ```
 
-## Development Approach
+### Running the application
 
-1. **Task Planning**: First component to be implemented, using GPT-4 to generate structured task plans
-2. **Vision System**: Will integrate Grounding DINO for UI element detection (future)
-3. **Automation**: Will add PyAutoGUI for computer control (future)
+```bash
+python app.py
+'open chrome and search for python documentation'
+```
 
-This step-by-step approach allows us to validate each component independently, ensuring robust functionality before integration.
+This will:
+1. Load the test screenshots
+2. Create a task plan
+3. Detect UI elements
+4. Display the results in a clear, formatted way
+
+Example output:
+```
+🔍 Task Plan:
+└── Open Chrome and search for Python documentation
+    ├── Exit VSCode
+    ├── Find Chrome icon
+    ├── Open Chrome
+    └── Search for Python docs
+
+📊 Detection Results:
+┌─────────────┬───────────┬──────────────┬────────────────┐
+│ Screenshot  │ Elements  │ Confidence   │ Types Found    │
+├─────────────┼───────────┼──────────────┼────────────────┤
+│ vscode.png  │    8      │    0.95      │ WINDOW, MENU   │
+│ chrome.png  │    5      │    0.90      │ SEARCH, BUTTON │
+└─────────────┴───────────┴──────────────┴────────────────┘
+
+👨‍💻 Available Actions:
+┌────────────┬─────────────────────────┬────────────┬─────────────────────┐
+│ Screenshot │ Element                 │ Confidence │ Possible Actions    │
+├────────────┼─────────────────────────┼────────────┼─────────────────────┤
+│ vscode.png │ WINDOW (Code panel)     │    0.95    │ LEFT_CLICK, TYPE    │
+│ vscode.png │ MENU_BAR (File menu)    │    0.92    │ LEFT_CLICK          │
+│ chrome.png │ SEARCH_BAR (Google)     │    0.90    │ LEFT_CLICK, TYPE    │
+│ chrome.png │ BUTTON (Search button)  │    0.88    │ LEFT_CLICK          │
+└────────────┴─────────────────────────┴────────────┴─────────────────────┘
+```
+
+## Extending the Framework
+
+Here is a rough idea of how to extend the framework. I will have cookbooks for Grouding DINO and PyAutoGUI integration soon.
+
+### Adding Tools
+
+1. **Computer Control**:
+```python
+from pyautogui import click, typewrite  # Example
+
+def execute_action(action: ActionType, element: DetectedElement):
+    if element.bounding_box:
+        x, y = element.bounding_box[0:2]
+        if action == MouseAction.LEFT_CLICK:
+            click(x, y)
+```
+
+2. **Object Detection**:
+```python
+from groundingdino import detect_objects  # Example
+
+def get_bounding_boxes(image_path: str) -> List[BoundingBox]:
+    return detect_objects(image_path)
+```
+
+### Customizing Prompts
+
+The `src/prompts/` directory contains all system prompts:
+- task_planner_prompts.py
+- screenshot_agent_prompts.py
+- output_processor_prompts.py
+
+Modify these to adjust the agent's behavior and capabilities.
+
+### Extending Data Models
+
+The `src/data_model.py` file defines the core types. Add new UI elements or actions:
+
+```python
+class UIElementType(str, Enum):
+    DROPDOWN = "dropdown"  # Add new element types
+    SLIDER = "slider"
+
+class MouseAction(str, Enum):
+    DRAG = "drag"  # Add new actions
+    HOVER = "hover"
+```
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
+Contributions welcome! Areas for improvement:
+- Additional vision model support
+- New UI element types and actions
+- Tool integrations
+- Prompt improvements
+- Documentation and examples in prompts should be extended to allow for it to generalise to queries, i've given that freedom to you!
 
 ## License
 
-[Your chosen license]
+[MIT](LICENSE)
